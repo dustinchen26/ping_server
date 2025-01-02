@@ -1,0 +1,117 @@
+<!-- 
+  Copyright © [2023] [Dustin_Chen]. All rights reserved.
+  Author: Dustin_Chen 陳智禮
+  Email:  Dustin_Chen@compal.com or chuhpsdustin@gmail.com
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+  <style>
+        body {
+            font-family: Roboto, sans-serif;
+            font-size: 14px;
+            margin: 0; 
+            padding: 20px;
+            text-align: left;
+        }  
+  
+    .author-info {
+      display: inline;
+      margin-right: 10px;
+    }
+  </style>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ping Server Result Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h2>Ping Server Result Chart</h2>
+	
+    <p class="author-info">Author: Dustin_Chen</p>
+    <p class="author-info">Email: <a href="mailto:Dustin_Chen@compal.com">Dustin_Chen@compal.com</a></p>
+    <p class="author-info">or <a href="mailto:chuhpsdustin@gmail.com">chuhpsdustin@gmail.com</a></p>
+    <br>
+
+<p>Please paste the result of ex:"ping -c 100 10.205.101.176"</p>
+	
+    <textarea id="pingInput" rows="10" cols="80" placeholder="Paste ping results here..."></textarea>
+    <br>
+    <button onclick="drawChart()">Draw Chart</button>
+    <canvas id="pingChart" width="800" height="400" style="display:none;"></canvas>
+    <p id="statistics" style="display:none;"></p>
+
+    <script>
+        function parsePingData(pingText) {
+            const regex = /icmp_seq=(\d+) .*? time=(\d+\.\d+) ms/g;
+            const data = [];
+            let match;
+            while ((match = regex.exec(pingText)) !== null) {
+                data.push({ icmp_seq: parseInt(match[1], 10), time: parseFloat(match[2]) });
+            }
+            return data;
+        }
+
+        function calculateStatistics(times) {
+            const min = Math.min(...times);
+            const max = Math.max(...times);
+            const avg = (times.reduce((sum, value) => sum + value, 0) / times.length).toFixed(3);
+            return { min, max, avg };
+        }
+
+        function drawChart() {
+            const pingText = document.getElementById('pingInput').value;
+            const pingData = parsePingData(pingText);
+
+            if (pingData.length === 0) {
+                alert('No valid ping data found. Please check your input.');
+                return;
+            }
+
+            const labels = pingData.map(point => point.icmp_seq);
+            const times = pingData.map(point => point.time);
+            const stats = calculateStatistics(times);
+
+            document.getElementById('statistics').style.display = 'block';
+            document.getElementById('statistics').textContent = `Min: ${stats.min} ms, Avg: ${stats.avg} ms, Max: ${stats.max} ms`;
+
+            const ctx = document.getElementById('pingChart').getContext('2d');
+            document.getElementById('pingChart').style.display = 'block';
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Ping Time (ms)',
+                        data: times,
+                        borderColor: 'blue',
+                        backgroundColor: 'rgba(0, 0, 255, 0.1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'ICMP Sequence'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Time (ms)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
